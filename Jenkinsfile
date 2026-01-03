@@ -34,7 +34,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE:${BUILD_NUMBER} .'
+                sh 'docker build -t $IMAGE .'
             }
         }
 
@@ -50,8 +50,8 @@ pipeline {
                         ssh -o StrictHostKeyChecking=no opc@20.0.1.233 "
                         echo '$DOCKER_PASS' | docker login -u '$DOCKER_USER' --password-stdin &&
                         docker rm -f demo-app || true &&
-                        docker pull $DOCKER_USER/jenkins-cicd-demo:${BUILD_NUMBER} &&
-                        docker run -d --name demo-app -p 8080:8080 $DOCKER_USER/jenkins-cicd-demo:${BUILD_NUMBER}
+                        docker pull $DOCKER_USER/jenkins-cicd-demo &&
+                        docker run -d --name demo-app -p 8080:8080 $DOCKER_USER/jenkins-cicd-demo
                         "
                         '''
                     }
