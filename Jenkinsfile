@@ -56,7 +56,7 @@ pipeline {
 
         stage('Deploy to Remote VM') {
             steps {
-                sshagent (credentials: ['remote-ssh']) {
+                sshagent (credentials: ['ssh-key']) {
                     sh '''
                     ssh -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST '
                         echo $PASS | docker login -u $USER --password-stdin &&
