@@ -9,10 +9,8 @@ pipeline {
 
     environment {
         IMAGE = "jenkins-cicd-demo"
-
-        // 🔁 change these 2 for your VM
-        REMOTE_USER = "opc"             // ubuntu / ec2-user / opc etc.
-        REMOTE_HOST = "20.0.1.233"       // <-- your VM IP
+        REMOTE_USER = "opc"
+        REMOTE_HOST = "20.0.1.233"
     }
 
     stages {
@@ -34,7 +32,27 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE .'
+                sh 'docker build -t $IMAGE:${BUILD_NUMBER} .'
+            }
+        }
+
+        stage('Docker Login & Push') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
+                    sh '''
+                        echo $PASS | docker login -u $USER --password-stdin
+
+                        docker tag jenkins-cicd-demo:${BUILD_NUMBER} $USER/jenkins-cicd-demo:${BUILD_NUMBER}
+                        docker tag jenkins-cicd-demo:${BUILD_NUMBER} $USER/jenkins-cicd-demo:latest
+
+                        docker push $USER/jenkins-cicd-demo:${BUILD_NUMBER}
+                        docker push $USER/jenkins-cicd-demo:latest
+                    '''
+                }
             }
         }
 
@@ -44,22 +62,19 @@ pipeline {
                     credentialsId: 'dockerhub-creds',
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
-        )]) {
+                )]) {
                     sshagent (credentials: ['ssh-key']) {
                         sh '''
                         ssh -o StrictHostKeyChecking=no opc@20.0.1.233 "
-                        echo '$DOCKER_PASS' | docker login -u '$DOCKER_USER' --password-stdin &&
-                        docker rm -f demo-app || true &&
-                        docker pull $DOCKER_USER/jenkins-cicd-demo &&
-                        docker run -d --name demo-app -p 8080:8080 $DOCKER_USER/jenkins-cicd-demo
+                            echo '$DOCKER_PASS' | docker login -u '$DOCKER_USER' --password-stdin &&
+                            docker rm -f demo-app || true &&
+                            docker pull $DOCKER_USER/jenkins-cicd-demo:latest &&
+                            docker run -d --name demo-app -p 8080:8080 $DOCKER_USER/jenkins-cicd-demo:latest
                         "
                         '''
                     }
-               }
-           }
+                }
+            }
         }
     }
-
 }
-
-
