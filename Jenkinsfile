@@ -69,7 +69,7 @@ pipeline {
                             echo '$DOCKER_PASS' | docker login -u '$DOCKER_USER' --password-stdin &&
                             docker rm -f demo-app || true &&
                             docker pull $DOCKER_USER/jenkins-cicd-demo:latest &&
-                            docker run -d --name demo-app -p 8080:8080 $DOCKER_USER/jenkins-cicd-demo:latest
+                            docker run -d --name demo-app -p 80:80 $DOCKER_USER/jenkins-cicd-demo:latest
                         "
                         '''
                     }
