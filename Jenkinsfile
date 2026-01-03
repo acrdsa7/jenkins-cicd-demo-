@@ -45,7 +45,7 @@ pipeline {
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
         )]) {
-                    sshagent (credentials: ['remote-ssh']) {
+                    sshagent (credentials: ['ssh-key']) {
                         sh '''
                         ssh -o StrictHostKeyChecking=no opc@20.0.1.233 "
                         echo '$DOCKER_PASS' | docker login -u '$DOCKER_USER' --password-stdin &&
