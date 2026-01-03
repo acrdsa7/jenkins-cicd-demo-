@@ -38,35 +38,28 @@ pipeline {
             }
         }
 
-        stage('Docker Login & Push') {
+        stage('Deploy to Remote VM') {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'USER',
-                    passwordVariable: 'PASS'
-                )]) {
-                    sh '''
-                    echo $PASS | docker login -u $USER --password-stdin
-                    docker tag $IMAGE:${BUILD_NUMBER} $USER/$IMAGE:${BUILD_NUMBER}
-                    docker push $USER/$IMAGE:${BUILD_NUMBER}
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to Remote VM') {
-            steps {
-                sshagent (credentials: ['ssh-key']) {
-                    sh '''
-                    ssh -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST '
-                        echo $PASS | docker login -u $USER --password-stdin &&
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+        )]) {
+                    sshagent (credentials: ['remote-ssh']) {
+                        sh '''
+                        ssh -o StrictHostKeyChecking=no opc@20.0.1.233 "
+                        echo '$DOCKER_PASS' | docker login -u '$DOCKER_USER' --password-stdin &&
                         docker rm -f demo-app || true &&
-                        docker pull '$USER'/'$IMAGE':'${BUILD_NUMBER}' &&
-                        docker run -d --name demo-app -p 8080:8080 '$USER'/'$IMAGE':'${BUILD_NUMBER}'
-                    '
-                    '''
-                }
-            }
+                        docker pull $DOCKER_USER/jenkins-cicd-demo:${BUILD_NUMBER} &&
+                        docker run -d --name demo-app -p 8080:8080 $DOCKER_USER/jenkins-cicd-demo:${BUILD_NUMBER}
+                        "
+                        '''
+                    }
+               }
+           }
         }
     }
+
 }
+
+
